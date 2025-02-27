@@ -1,12 +1,58 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import asyncErrorHandler from "../utils/asyncErrorHandler";
 import httpResponse from "../utils/httpResponse";
-import { EResponseStatusCode } from "../constants/application";
+import {
+  EErrorStatusCode,
+  EResponseStatusCode,
+} from "../constants/application";
 import quicker from "../utils/quicker";
-import dayjs from "dayjs";
+import { AppConfig } from "../config";
+import { s3Service } from "../utils/awsUtils";
+import httpError from "../utils/httpError";
 
 export default {
   handleUpload: asyncErrorHandler(async (req: Request, res: Response) => {
-    
+    const key = quicker.generateKeyFilename();
+    const bucketName = String(AppConfig.get("BUCKET_NAME_NORMAL_UPLOAD")) || "";
+    const uploadUrl = await s3Service.getUploadUrl(key, bucketName);
+    return httpResponse(
+      req,
+      res,
+      EResponseStatusCode.OK,
+      "URL Created successfully",
+      {
+        presignedUrl: uploadUrl,
+        key: key,
+      }
+    );
   }),
+
+  getDownloadUrl: asyncErrorHandler(
+    async (req: Request, res: Response, next: NextFunction) => {
+      const { key } = req.body;
+
+      if (!key) {
+        return httpError(
+          next,
+          new Error("Body not provided."),
+          req,
+          EErrorStatusCode.BAD_REQUEST
+        );
+      }
+
+      const bucketName =
+        String(AppConfig.get("BUCKET_NAME_NORMAL_UPLOAD")) || "";
+      const downloadUrl = await s3Service.getDownloadUrl(key, bucketName);
+
+      return httpResponse(
+        req,
+        res,
+        EResponseStatusCode.OK,
+        "URL fetched successfully.",
+        {
+          accessUrl: downloadUrl,
+        }
+      );
+    }
+  ),
 };
