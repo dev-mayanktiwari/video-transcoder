@@ -6,6 +6,7 @@ import { ResponseMessage } from "./constants/responseMessage";
 import httpError from "./utils/httpError";
 import globalErrorHandler from "./middlewares/globalErrorHandler";
 import healthRouter from "./routes/healthRoutes";
+import uploadRouter from "./routes/uploadRoutes";
 
 const app: Application = express();
 const PORT = AppConfig.get("PORT");
@@ -18,7 +19,7 @@ app.use(express.urlencoded({ extended: false }));
 
 // Routes
 app.use("/api/v1/health", healthRouter);
-app.use("/api/v1/upload", healthRouter);
+app.use("/api/v1/upload", uploadRouter);
 
 //404 Handler
 app.use((req: Request, _: Response, next: NextFunction) => {
