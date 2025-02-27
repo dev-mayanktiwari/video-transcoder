@@ -18,6 +18,7 @@ app.use(express.urlencoded({ extended: false }));
 
 // Routes
 app.use("/api/v1/health", healthRouter);
+app.use("/api/v1/upload", healthRouter);
 
 //404 Handler
 app.use((req: Request, _: Response, next: NextFunction) => {
