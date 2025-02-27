@@ -1,4 +1,5 @@
 import os from "os";
+import { v4 as uuidv4 } from "uuid";
 import { AppConfig } from "../config";
 
 export default {
@@ -22,5 +23,9 @@ export default {
         )} MB`,
       },
     };
+  },
+  generateKeyFilename: () => {
+    const id = uuidv4();
+    return `uploads/video-${id}.mp4`;
   },
 };
