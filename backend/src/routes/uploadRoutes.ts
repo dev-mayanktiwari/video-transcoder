@@ -3,4 +3,7 @@ import uploadController from "../controllers/uploadController";
 
 const uploadRouter = Router();
 
-uploadRouter.post("/transcode", uploadController.handleUpload);
+uploadRouter.get("/getPresignedUrl", uploadController.handleUpload);
+uploadRouter.post("/getDownloadUrl", uploadController.getDownloadUrl);
+
+export default uploadRouter;
