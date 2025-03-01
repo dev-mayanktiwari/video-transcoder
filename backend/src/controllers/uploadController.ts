@@ -7,7 +7,7 @@ import {
 } from "../constants/application";
 import quicker from "../utils/quicker";
 import { AppConfig } from "../config";
-import { s3Service } from "../utils/awsUtils";
+import { s3Service } from "../utils/AWSS3Utils";
 import httpError from "../utils/httpError";
 
 export default {

@@ -7,6 +7,7 @@ import httpError from "./utils/httpError";
 import globalErrorHandler from "./middlewares/globalErrorHandler";
 import healthRouter from "./routes/healthRoutes";
 import uploadRouter from "./routes/uploadRoutes";
+import pollQueue from "./utils/pollMessages";
 
 const app: Application = express();
 const PORT = AppConfig.get("PORT");
@@ -33,6 +34,12 @@ app.use((req: Request, _: Response, next: NextFunction) => {
 // Global Error Handler
 app.use(globalErrorHandler);
 
-app.listen(PORT, () => {
-  console.log(`The server is running on PORT ${PORT}`);
-});
+async function init() {
+  app.listen(PORT, () => {
+    console.log(`The server is running on PORT ${PORT}`);
+  });
+
+  await pollQueue();
+}
+
+init();
