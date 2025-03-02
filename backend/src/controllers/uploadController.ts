@@ -9,6 +9,7 @@ import quicker from "../utils/quicker";
 import { AppConfig } from "../config";
 import { s3Service } from "../utils/AWSS3Utils";
 import httpError from "../utils/httpError";
+import prisma from "../prisma/prismaClient";
 
 export default {
   handleUpload: asyncErrorHandler(async (req: Request, res: Response) => {
@@ -53,6 +54,31 @@ export default {
           accessUrl: downloadUrl,
         }
       );
+    }
+  ),
+
+  uploadVideoLink: asyncErrorHandler(
+    async (req: Request, res: Response, next: NextFunction) => {
+      const { videoId, videoLink } = req.body;
+      if (!videoId || !videoLink) {
+        return httpError(
+          next,
+          new Error("Invalid Input"),
+          req,
+          EErrorStatusCode.BAD_REQUEST
+        );
+      }
+
+      const updatedLink = await prisma.links.create({
+        data: {
+          videoLink,
+          videoId,
+        },
+      });
+
+      return httpResponse(req, res, EResponseStatusCode.CREATED, "Link created successfully", {
+        linkData: updatedLink
+      })
     }
   ),
 };

@@ -11,7 +11,8 @@ type ConfigKeys =
   | "AMAZON_SECRET_ACCESS_KEY"
   | "BUCKET_NAME_NORMAL_UPLOAD"
   | "BUCKET_NAME_HLS_UPLOAD"
-  | "QUEUE_URL";
+  | "QUEUE_URL"
+  | "CLOUDFRONT_URL";
 
 const _config: Record<ConfigKeys, string | undefined> = {
   PORT: process.env.PORT,
@@ -24,6 +25,7 @@ const _config: Record<ConfigKeys, string | undefined> = {
   BUCKET_NAME_NORMAL_UPLOAD: process.env.BUCKET_NAME_NORMAL_UPLOAD,
   BUCKET_NAME_HLS_UPLOAD: process.env.BUCKET_NAME_HLS_UPLOAD,
   QUEUE_URL: process.env.QUEUE_URL,
+  CLOUDFRONT_URL: process.env.CLOUDFRONT_URL,
 };
 
 export const AppConfig = {
