@@ -23,7 +23,7 @@ export default function Home() {
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-2">
             <Film className="h-6 w-6 text-primary" />
-            <h1 className="text-xl font-bold">HLS Video Transcoder</h1>
+            <h1 className="text-xl font-bold"> FRAMEFLUX </h1>
           </div>
           <ThemeToggle />
         </div>
