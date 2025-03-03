@@ -1,7 +1,8 @@
 import { AppConfig } from "../config";
 import { s3Service } from "./AWSS3Utils";
 import { sqsService } from "./AWSSQSUtils";
-import { spawn } from "child_process";
+// import { spawn } from "child_process";
+import { runContainer } from "./runECSContainer";
 
 async function processMessage(body: string | undefined) {
   if (!body) {
@@ -10,7 +11,8 @@ async function processMessage(body: string | undefined) {
   try {
     const event = JSON.parse(body!);
     const key = event.Records?.[0]?.s3?.object?.key;
-
+    const videoId = key.split("/")[1];
+    console.log(videoId);
     if (key) {
       console.log("Object key found", key);
       const downloadUrl = await s3Service.getDownloadUrl(
@@ -18,29 +20,30 @@ async function processMessage(body: string | undefined) {
         String(AppConfig.get("BUCKET_NAME_NORMAL_UPLOAD"))
       );
       console.log("Download URL:", downloadUrl);
-      const docker = spawn("docker", [
-        "run",
-        "--rm",
-        "-e",
-        `VIDEO_URL=${downloadUrl}`,
-        "-e",
-        `VIDEO_ID=121212121`,
-        "-e",
-        `OUTPUT_BUCKET=${AppConfig.get("BUCKET_NAME_HLS_UPLOAD")}`,
-        "-e",
-        `AWS_ACCESS_KEY_ID=${AppConfig.get("AMAZON_ACCESS_KEY")}`,
-        "-e",
-        `BUCKET_REGION=${AppConfig.get("BUCKET_REGION")}`,
-        "-e",
-        `CLOUDFRONT_URL=${AppConfig.get("CLOUDFRONT_URL")}`,
-        "-e",
-        `AWS_SECRET_ACCESS_KEY=${AppConfig.get("AMAZON_SECRET_ACCESS_KEY")}`,
-        "video-transcoder",
-      ]);
+      //   const docker = spawn("docker", [
+      //     "run",
+      //     "--rm",
+      //     "-e",
+      //     `VIDEO_URL=${downloadUrl}`,
+      //     "-e",
+      //     `VIDEO_ID=${videoId}`,
+      //     "-e",
+      //     `OUTPUT_BUCKET=${AppConfig.get("BUCKET_NAME_HLS_UPLOAD")}`,
+      //     "-e",
+      //     `AWS_ACCESS_KEY_ID=${AppConfig.get("AMAZON_ACCESS_KEY")}`,
+      //     "-e",
+      //     `BUCKET_REGION=${AppConfig.get("BUCKET_REGION")}`,
+      //     "-e",
+      //     `CLOUDFRONT_URL=${AppConfig.get("CLOUDFRONT_URL")}`,
+      //     "-e",
+      //     `AWS_SECRET_ACCESS_KEY=${AppConfig.get("AMAZON_SECRET_ACCESS_KEY")}`,
+      //     "video-transcoder",
+      //   ]);
 
-      docker.stdout.on("data", (data) => {
-        console.log(`Container output: ${data}`);
-      });
+      //   docker.stdout.on("data", (data) => {
+      //     console.log(`Container output: ${data}`);
+      //   });
+      await runContainer(downloadUrl, videoId);
     } else {
       console.log("No key found");
     }

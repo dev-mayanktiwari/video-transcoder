@@ -24,6 +24,7 @@ export default {
       {
         presignedUrl: uploadUrl,
         key: key,
+        videoId: key,
       }
     );
   }),
@@ -57,7 +58,7 @@ export default {
     }
   ),
 
-  uploadVideoLink: asyncErrorHandler(
+  postUploadedVideoLink: asyncErrorHandler(
     async (req: Request, res: Response, next: NextFunction) => {
       const { videoId, videoLink } = req.body;
       if (!videoId || !videoLink) {
@@ -76,9 +77,29 @@ export default {
         },
       });
 
-      return httpResponse(req, res, EResponseStatusCode.CREATED, "Link created successfully", {
-        linkData: updatedLink
-      })
+      return httpResponse(
+        req,
+        res,
+        EResponseStatusCode.CREATED,
+        "Link created successfully",
+        {
+          linkData: updatedLink,
+        }
+      );
+    }
+  ),
+
+  getVideoLink: asyncErrorHandler(
+    async (req: Request, res: Response, next: NextFunction) => {
+      const videoId = req.params.videoId;
+      if (!videoId) {
+        return httpError(
+          next,
+          new Error("No videoId found"),
+          req,
+          EErrorStatusCode.BAD_REQUEST
+        );
+      }
     }
   ),
 };

@@ -12,7 +12,13 @@ type ConfigKeys =
   | "BUCKET_NAME_NORMAL_UPLOAD"
   | "BUCKET_NAME_HLS_UPLOAD"
   | "QUEUE_URL"
-  | "CLOUDFRONT_URL";
+  | "CLOUDFRONT_URL"
+  | "BACKEND_ENDPOINT"
+  | "ECS_CLUSTER_NAME"
+  | "ECS_TASK_DEFINITON"
+  | "SUBNET_ID_1"
+  | "SUBNET_ID_2"
+  | "SECURITY_GROUP_ID";
 
 const _config: Record<ConfigKeys, string | undefined> = {
   PORT: process.env.PORT,
@@ -26,6 +32,12 @@ const _config: Record<ConfigKeys, string | undefined> = {
   BUCKET_NAME_HLS_UPLOAD: process.env.BUCKET_NAME_HLS_UPLOAD,
   QUEUE_URL: process.env.QUEUE_URL,
   CLOUDFRONT_URL: process.env.CLOUDFRONT_URL,
+  BACKEND_ENDPOINT: process.env.BACKEND_ENDPOINT,
+  ECS_CLUSTER_NAME: process.env.ECS_CLUSTER_NAME,
+  ECS_TASK_DEFINITON: process.env.ECS_TASK_DEFINITON,
+  SUBNET_ID_1: process.env.SUBNET_ID_1,
+  SUBNET_ID_2: process.env.SUBNET_ID_2,
+  SECURITY_GROUP_ID: process.env.SECURITY_GROUP_ID,
 };
 
 export const AppConfig = {
