@@ -158,9 +158,11 @@ function runFFmpeg(inputPath: string, outputDir: string): Promise<void> {
       "3",
       "-hls_flags",
       "independent_segments",
+      "-hls_segment_filename",
+      path.join(outputDir, "%v/segment-%03d.ts"),
       "-master_pl_name",
       "master.m3u8",
-      path.join(outputDir, "playlist-%v.m3u8"),
+      path.join(outputDir, "%v/playlist.m3u8"),
     ]);
 
     let ffmpegLogs = "";
@@ -216,32 +218,46 @@ async function uploadToS3(
   const allFiles = getAllFiles(outputDir);
   log(`Found ${allFiles.length} files to upload`);
 
-  // const baseUrl = `https://${bucketName}.s3.amazonaws.com/${videoId}/`;
+  let uploadErrors = 0;
 
   for (const filePath of allFiles) {
-    const key = `${videoId}/${path.relative(outputDir, filePath)}`; // Add videoId prefix
+    const key = `${videoId}/${path.relative(outputDir, filePath)}`.replace(
+      /\\/g,
+      "/"
+    ); // Ensure forward slashes
 
     try {
       log(`Uploading file: ${key}`);
 
-      // Use direct upload instead of presigned URLs
-      await s3Service.uploadFile(filePath, key, bucketName);
+      // Determine content type based on file extension
+      let contentType = "application/octet-stream";
+      if (filePath.endsWith(".m3u8")) {
+        contentType = "application/vnd.apple.mpegurl";
+      } else if (filePath.endsWith(".ts")) {
+        contentType = "video/MP2T";
+      }
+
+      // Upload with proper content type
+      await s3Service.uploadFile(filePath, key, bucketName, contentType);
 
       log(`Successfully uploaded: ${key}`);
     } catch (error: any) {
+      uploadErrors++;
       log(`Failed to upload ${key}: ${error.message}`, "ERROR");
 
       if (error.response) {
         log(`Response status: ${error.response.status}`, "ERROR");
         log(`Response data: ${JSON.stringify(error.response.data)}`, "ERROR");
       }
-
-      // Continue with other files despite error
     }
   }
 
+  if (uploadErrors > 0) {
+    log(`Warning: ${uploadErrors} files failed to upload`, "ERROR");
+  }
+
   const playbackUrl = `${CLOUDFRONT_URL}/${videoId}/master.m3u8`;
-  log(`All uploads attempted. Playback URL: ${playbackUrl}`);
+  log(`All uploads completed. Playback URL: ${playbackUrl}`);
   return playbackUrl;
 }
 

@@ -8,6 +8,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import dotenv from "dotenv";
 import * as fs from "fs";
 import * as path from "path";
+import * as mime from "mime-types";
 dotenv.config();
 
 class S3BucketService {
@@ -137,17 +138,17 @@ class S3BucketService {
   async uploadFile(
     filePath: string,
     key: string,
-    bucketName: string
+    bucketName: string,
+    contentType?: string
   ): Promise<void> {
     if (!fs.existsSync(filePath)) {
       throw new Error(`File not found: ${filePath}`);
     }
 
     // Determine content type based on file extension
-    let contentType = "application/octet-stream";
-    if (key.endsWith(".mp4")) contentType = "video/mp4";
-    if (key.endsWith(".m3u8")) contentType = "application/vnd.apple.mpegurl";
-    if (key.endsWith(".ts")) contentType = "video/mp2t";
+    const fileContentType =
+      contentType || mime.lookup(filePath) || "application/octet-stream";
+    const fileContent = fs.readFileSync(filePath);
 
     this.logger(`Uploading file directly to S3: ${bucketName}/${key}`);
 
@@ -159,6 +160,7 @@ class S3BucketService {
         Key: key,
         Body: fileContent,
         ContentType: contentType,
+        ACL: "public-read",
       });
 
       await this.s3Client.send(command);
