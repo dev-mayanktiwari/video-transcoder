@@ -1,74 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { FileVideo, Film } from "lucide-react";
+import { useState } from "react";
+import { Film } from "lucide-react";
 import { VideoUploader } from "@/components/video-uploader";
 import { VideoPlayer } from "@/components/video-player";
 import { ProcessingStatus } from "@/components/processing-status";
 import { ThemeToggle } from "@/components/theme-toggle";
-// import { pollForTranscodedVideo } from "@/lib/api";
-import { toast } from "sonner";
 
 export default function Home() {
-  const [videoId, setVideoId] = useState<string | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Poll for the transcoded video URL when videoId changes
-  useEffect(() => {
-    if (!videoId) return;
-
-    setIsProcessing(true);
-
-    const pollInterval = 5000; // 5 seconds
-    let attempts = 0;
-    const maxAttempts = 60; // 5 minutes max (60 * 5 seconds)
-
-    const poll = async () => {
-      try {
-        attempts++;
-        //const url = await pollForTranscodedVideo(videoId);
-        const url = "abc";
-        if (url) {
-          setVideoUrl(url);
-          setIsProcessing(false);
-          toast("Processing complete", {
-            description: "Your video is ready to play",
-          });
-          return;
-        }
-
-        // If we've reached max attempts, stop polling
-        if (attempts >= maxAttempts) {
-          setIsProcessing(false);
-          toast.error("Processing timeout", {
-            description:
-              "Video processing is taking longer than expected. Please try again later.",
-          });
-          return;
-        }
-
-        // Continue polling
-        setTimeout(poll, pollInterval);
-      } catch (error) {
-        console.error("Error polling for video:", error);
-        setIsProcessing(false);
-        toast.error("Processing failed", {
-          description: "There was a problem processing your video",
-        });
-      }
-    };
-
-    poll();
-
-    // Cleanup
-    return () => {
-      setIsProcessing(false);
-    };
-  }, [videoId, toast]);
-
-  const handleUploadComplete = (id: string) => {
-    setVideoId(id);
+  const handleUploadComplete = (url: string) => {
+    setVideoUrl(url);
+    setIsProcessing(false);
   };
 
   return (
@@ -106,16 +51,14 @@ export default function Home() {
             </div>
           )}
 
-          {/* Processing status */}
-          <ProcessingStatus isProcessing={isProcessing} />
+          {/* Processing status (only shown when processing) */}
+          {isProcessing && <ProcessingStatus isProcessing={isProcessing} />}
 
-          {/* Upload section (hidden when processing or video is ready) */}
-          {!isProcessing && !videoUrl && (
-            <div className="space-y-4">
-              <h3 className="text-xl font-semibold">Upload Your Video</h3>
-              <VideoUploader onUploadComplete={handleUploadComplete} />
-            </div>
-          )}
+          {/* Upload section (always visible for now) */}
+          <div className="space-y-4">
+            <h3 className="text-xl font-semibold">Upload Your Video</h3>
+            <VideoUploader onUploadComplete={handleUploadComplete} />
+          </div>
 
           {/* Instructions */}
           <div className="bg-muted rounded-lg p-6 space-y-4">

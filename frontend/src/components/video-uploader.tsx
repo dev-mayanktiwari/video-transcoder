@@ -1,52 +1,52 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Upload, FileVideo, AlertCircle, CheckCircle2 } from "lucide-react";
+import {
+  Upload,
+  FileVideo,
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
+  Play,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
-import { getPresignedUrl } from "@/utils/apiClient";
-// import {
-//   getPresignedUrl,
-//   uploadToPresignedUrl,
-//   notifyVideoUploaded,
-// } from "@/lib/api";
+import {
+  getPresignedUrl,
+  uploadToPresignedUrl,
+  getPlaybackUrl,
+} from "@/utils/apiClient";
 
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB in bytes
-const ALLOWED_FILE_TYPES = [
-  "video/mp4",
-];
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+const ALLOWED_FILE_TYPES = ["video/mp4"];
 
 export function VideoUploader({
   onUploadComplete,
 }: {
-  onUploadComplete: (videoId: string) => void;
+  onUploadComplete: (videoUrl: string) => void;
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setError(null);
     const selectedFile = e.target.files?.[0];
 
-    if (!selectedFile) {
-      return;
-    }
+    if (!selectedFile) return;
 
-    // Validate file type
     if (!ALLOWED_FILE_TYPES.includes(selectedFile.type)) {
-      setError("Please select a valid video file (MP4, MOV, AVI, MKV)");
+      setError("Invalid file type. Only MP4 is allowed.");
       return;
     }
 
-    // Validate file size
     if (selectedFile.size > MAX_FILE_SIZE) {
-      setError("File size must be less than 50MB");
+      setError("File size exceeds 50MB limit.");
       return;
     }
 
@@ -55,70 +55,84 @@ export function VideoUploader({
 
   const handleUpload = async () => {
     if (!file) return;
-    const preSignedUrl = "As";
+
     try {
       setIsUploading(true);
-      setUploadProgress(0);
+      setError(null);
 
-      // Get presigned URL from backend
-      const presignedUrl = await getPresignedUrl();
+      // Step 1: Get presigned URL
+      const response = await getPresignedUrl();
+      const preSignedUrl = response.data.presignedUrl;
+      const videoId = response.data.videoId;
 
-      // Upload file to presigned URL with progress tracking
-      await uploadFileWithProgress(preSignedUrl, file);
+      // Step 2: Upload file
+      await uploadToPresignedUrl(preSignedUrl, file);
 
-      // Notify backend that upload is complete
-      // const { videoId } = await notifyVideoUploaded(file.name);
-
+      setIsUploading(false);
+      setIsProcessing(true);
       toast.success("Upload successful", {
         description: "Your video is now being processed",
       });
 
-      // Reset state
-      setFile(null);
-      setUploadProgress(100);
-
-      // Notify parent component that upload is complete
-      // onUploadComplete(videoId);
+      // Step 3: Poll for processed video URL
+      pollForVideo(videoId);
     } catch (err) {
       console.error("Upload error:", err);
       setError("Failed to upload video. Please try again.");
-      toast.error("Upload failed", {
-        description: "There was a problem uploading your video",
-      });
-    } finally {
       setIsUploading(false);
+      setIsProcessing(false);
     }
   };
 
-  const uploadFileWithProgress = async (presignedUrl: string, file: File) => {
-    return new Promise<void>((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
+  const pollForVideo = async (videoId: string) => {
+    const pollInterval = 7000; // 7 seconds
+    let attempts = 0;
+    const maxAttempts = 85; // ~10 minutes
 
-      xhr.upload.addEventListener("progress", (event) => {
-        if (event.lengthComputable) {
-          const percentComplete = Math.round(
-            (event.loaded / event.total) * 100
-          );
-          setUploadProgress(percentComplete);
+    const poll = async () => {
+      try {
+        attempts++;
+        const response = await getPlaybackUrl(videoId);
+
+        if (response.data?.link?.videoLink) {
+          // Video is ready
+          const url = response.data.link.videoLink;
+          setVideoUrl(url);
+          setIsProcessing(false);
+          toast.success("Video is ready to play!");
+          onUploadComplete(url);
+          return;
         }
-      });
 
-      xhr.addEventListener("load", () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          resolve();
+        // Continue polling if under max attempts
+        if (attempts < maxAttempts) {
+          setTimeout(poll, pollInterval);
         } else {
-          reject(new Error(`Upload failed with status ${xhr.status}`));
+          // Timeout after max attempts
+          toast.error("Video processing is taking too long");
+          setIsProcessing(false);
         }
-      });
+      } catch (error: any) {
+        // Handle specific "not ready yet" error
+        if (
+          error.response?.status === 404 &&
+          error.response?.data?.message === "Video not generated yet"
+        ) {
+          if (attempts < maxAttempts) {
+            setTimeout(poll, pollInterval);
+          } else {
+            toast.error("Video processing timed out");
+            setIsProcessing(false);
+          }
+        } else {
+          // Other errors
+          console.error("Polling error:", error);
+          setIsProcessing(false);
+        }
+      }
+    };
 
-      xhr.addEventListener("error", () => {
-        reject(new Error("Upload failed"));
-      });
-
-      xhr.open("PUT", presignedUrl);
-      xhr.setRequestHeader("Content-Type", file.type);
-      xhr.send(file);
-    });
+    poll();
   };
 
   const triggerFileInput = () => {
@@ -139,7 +153,7 @@ export function VideoUploader({
               onChange={handleFileChange}
               accept="video/*"
               className="hidden"
-              disabled={isUploading}
+              disabled={isUploading || isProcessing}
             />
 
             <FileVideo className="h-12 w-12 text-muted-foreground mb-4" />
@@ -149,7 +163,7 @@ export function VideoUploader({
                 {file ? file.name : "Select a video to upload"}
               </p>
               <p className="text-sm text-muted-foreground mb-4">
-                MP4, MOV, AVI or MKV (max. 50MB)
+                MP4 format, max 50MB
               </p>
 
               <Button
@@ -159,7 +173,7 @@ export function VideoUploader({
                   e.stopPropagation();
                   triggerFileInput();
                 }}
-                disabled={isUploading}
+                disabled={isUploading || isProcessing}
               >
                 <Upload className="mr-2 h-4 w-4" />
                 Select Video
@@ -177,30 +191,64 @@ export function VideoUploader({
 
           {file && !error && (
             <div className="w-full space-y-4">
-              <div className="flex items-center space-x-2">
-                <CheckCircle2 className="h-5 w-5 text-green-500" />
-                <span className="text-sm font-medium">
-                  File selected: {file.name}
-                </span>
-              </div>
-
-              {isUploading && (
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Uploading...</span>
-                    <span>{uploadProgress}%</span>
-                  </div>
-                  <Progress value={uploadProgress} className="h-2" />
+              {isUploading ? (
+                <div className="flex items-center space-x-2">
+                  <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+                  <span className="text-sm font-medium">Uploading...</span>
+                </div>
+              ) : isProcessing ? (
+                <div className="flex items-center space-x-2">
+                  <Loader2 className="h-5 w-5 animate-spin text-yellow-500" />
+                  <span className="text-sm font-medium">
+                    Processing video... This may take a few minutes.
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-2">
+                  <CheckCircle2 className="h-5 w-5 text-green-500" />
+                  <span className="text-sm font-medium">
+                    File selected: {file.name}
+                  </span>
                 </div>
               )}
 
-              <Button
-                onClick={handleUpload}
-                disabled={isUploading || !file}
-                className="w-full"
+              {!isUploading && !isProcessing && !videoUrl && (
+                <Button
+                  onClick={handleUpload}
+                  disabled={isUploading || isProcessing || !file}
+                  className="w-full"
+                >
+                  Upload Video
+                </Button>
+              )}
+            </div>
+          )}
+
+          {videoUrl && (
+            <div className="w-full bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mt-4">
+              <h3 className="font-bold text-lg mb-2 flex items-center">
+                <CheckCircle2 className="h-5 w-5 text-green-500 mr-2" />
+                Video ready for streaming🎉!
+              </h3>
+
+              {/* <Button
+                onClick={() => window.open(videoUrl, "_blank")}
+                className="w-full bg-green-600 hover:bg-green-700 mb-2"
               >
-                {isUploading ? "Uploading..." : "Upload Video"}
+                <Play className="mr-2 h-5 w-5" />
+                Play Video
               </Button>
+
+              <p className="text-sm text-center">
+                <a
+                  href={videoUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-500 hover:underline"
+                >
+                  {videoUrl}
+                </a>
+              </p> */}
             </div>
           )}
         </div>
