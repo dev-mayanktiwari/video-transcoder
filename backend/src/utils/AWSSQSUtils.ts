@@ -28,7 +28,7 @@ class SQSService {
    * @returns A promise that resolves to the received messages.
    */
 
-  async receiveMessage(maxMessages: number = 1, waitTimeSeconds: number = 5) {
+  async receiveMessage(maxMessages: number = 1, waitTimeSeconds: number = 10) {
     const command = new ReceiveMessageCommand({
       QueueUrl: this.queueUrl,
       MaxNumberOfMessages: maxMessages,
