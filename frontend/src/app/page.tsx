@@ -85,6 +85,15 @@ export default function Home() {
             © {new Date().getFullYear()} HLS Video Transcoder. All rights
             reserved.
           </p>
+          <p className="mt-2">
+            Made with ❤ by{" "}
+            <a href="https://github.com/dev-mayanktiwari">
+              <b>
+                {" "}
+                <u>Mayank Tiwari</u>
+              </b>
+            </a>
+          </p>
         </div>
       </footer>
     </main>
