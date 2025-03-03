@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 :root {
   --foreground-rgb: 0, 0, 0;
@@ -72,11 +70,22 @@
   }
 }
 
-@layer base {
+/* Remove the problematic rule that's causing the error */
+/* @layer base {
   * {
     @apply border-border;
   }
   body {
     @apply bg-background text-foreground;
   }
+} */
+
+/* Replace with standard CSS using the variables */
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+* {
+  border-color: hsl(var(--border));
 }

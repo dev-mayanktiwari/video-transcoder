@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
+import { getPresignedUrl } from "@/utils/apiClient";
 // import {
 //   getPresignedUrl,
 //   uploadToPresignedUrl,
@@ -16,9 +17,6 @@ import { toast } from "sonner";
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB in bytes
 const ALLOWED_FILE_TYPES = [
   "video/mp4",
-  "video/quicktime",
-  "video/x-msvideo",
-  "video/x-matroska",
 ];
 
 export function VideoUploader({
@@ -63,7 +61,7 @@ export function VideoUploader({
       setUploadProgress(0);
 
       // Get presigned URL from backend
-      // const presignedUrl = await getPresignedUrl(file.name, file.type);
+      const presignedUrl = await getPresignedUrl();
 
       // Upload file to presigned URL with progress tracking
       await uploadFileWithProgress(preSignedUrl, file);
