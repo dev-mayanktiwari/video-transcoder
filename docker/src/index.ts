@@ -81,35 +81,13 @@ function transcodeToHLS(inputPath: string): Promise<string> {
   const outputDir = path.join(__dirname, "../temp/output");
   fs.mkdirSync(outputDir, { recursive: true });
 
-  // Create directories for each resolution
-  ["360p", "480p", "720p"].forEach((res) => {
-    fs.mkdirSync(path.join(outputDir, res), { recursive: true });
-  });
-
   log(`Starting HLS transcoding for video: ${inputPath}`);
 
-  // Execute FFmpeg commands
   return new Promise(async (resolve, reject) => {
     try {
-      // Transcode to 360p
-      log("Starting 360p transcoding");
-      await runFFmpeg(inputPath, outputDir, 360);
-      log("Completed 360p transcoding");
-
-      // Transcode to 480p
-      log("Starting 480p transcoding");
-      await runFFmpeg(inputPath, outputDir, 480);
-      log("Completed 480p transcoding");
-
-      // Transcode to 720p
-      log("Starting 720p transcoding");
-      await runFFmpeg(inputPath, outputDir, 720);
-      log("Completed 720p transcoding");
-
-      // Create master playlist
-      log("Creating master playlist");
-      createMasterPlaylist(outputDir);
-      log("Master playlist created");
+      log("Starting FFmpeg transcoding with var_stream_map");
+      await runFFmpeg(inputPath, outputDir);
+      log("Completed HLS transcoding");
 
       resolve(outputDir);
     } catch (error: any) {
@@ -119,41 +97,70 @@ function transcodeToHLS(inputPath: string): Promise<string> {
   });
 }
 
-function runFFmpeg(
-  inputPath: string,
-  outputDir: string,
-  height: number
-): Promise<void> {
+function runFFmpeg(inputPath: string, outputDir: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    const resolution = `${height}p`;
-    const outputPath = path.join(outputDir, resolution);
-
-    log(`Transcoding to ${resolution}...`);
+    log("Running FFmpeg with multi-resolution encoding...");
 
     const ffmpeg = spawn("ffmpeg", [
       "-i",
       inputPath,
-      "-vf",
-      `scale=-2:${height}`,
+      "-map",
+      "0:v:0",
+      "-map",
+      "0:a:0",
+      "-map",
+      "0:v:0",
+      "-map",
+      "0:a:0",
+      "-map",
+      "0:v:0",
+      "-map",
+      "0:a:0",
       "-c:v",
-      "h264",
-      "-profile:v",
-      "main",
+      "libx264",
       "-crf",
-      "23",
+      "22",
       "-c:a",
       "aac",
       "-ar",
       "48000",
-      "-b:a",
+      "-filter:v:0",
+      "scale=w=480:h=360",
+      "-maxrate:v:0",
+      "600k",
+      "-b:a:0",
+      "64k",
+      "-filter:v:1",
+      "scale=w=640:h=480",
+      "-maxrate:v:1",
+      "900k",
+      "-b:a:1",
       "128k",
-      "-hls_time",
-      "6",
+      "-filter:v:2",
+      "scale=w=1280:h=720",
+      "-maxrate:v:2",
+      "900k",
+      "-b:a:2",
+      "128k",
+      "-var_stream_map",
+      "v:0,a:0,name:360p v:1,a:1,name:480p v:2,a:2,name:720p",
+      "-preset",
+      "slow",
+      "-hls_list_size",
+      "0",
+      "-threads",
+      "0",
+      "-f",
+      "hls",
       "-hls_playlist_type",
-      "vod",
-      "-hls_segment_filename",
-      `${outputPath}/segment_%03d.ts`,
-      `${outputPath}/playlist.m3u8`,
+      "event",
+      "-hls_time",
+      "3",
+      "-hls_flags",
+      "independent_segments",
+      "-master_pl_name",
+      "master.m3u8",
+      path.join(outputDir, "playlist-%v.m3u8"),
     ]);
 
     let ffmpegLogs = "";
@@ -165,7 +172,7 @@ function runFFmpeg(
 
     ffmpeg.on("close", (code) => {
       if (code === 0) {
-        log(`FFmpeg ${resolution} completed successfully`);
+        log("FFmpeg transcoding completed successfully");
         resolve();
       } else {
         log(`FFmpeg process exited with code ${code}`, "ERROR");
@@ -174,19 +181,6 @@ function runFFmpeg(
       }
     });
   });
-}
-
-function createMasterPlaylist(outputDir: string): void {
-  const masterContent = `#EXTM3U
-#EXT-X-VERSION:3
-#EXT-X-STREAM-INF:BANDWIDTH=800000,RESOLUTION=640x360
-360p/playlist.m3u8
-#EXT-X-STREAM-INF:BANDWIDTH=1400000,RESOLUTION=854x480
-480p/playlist.m3u8
-#EXT-X-STREAM-INF:BANDWIDTH=2800000,RESOLUTION=1280x720
-720p/playlist.m3u8`;
-
-  fs.writeFileSync(path.join(outputDir, "master.m3u8"), masterContent);
 }
 
 function getAllFiles(dir: string): string[] {
