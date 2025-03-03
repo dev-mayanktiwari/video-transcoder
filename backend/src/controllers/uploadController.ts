@@ -92,6 +92,7 @@ export default {
   getVideoLink: asyncErrorHandler(
     async (req: Request, res: Response, next: NextFunction) => {
       const videoId = req.params.videoId;
+
       if (!videoId) {
         return httpError(
           next,
@@ -100,6 +101,31 @@ export default {
           EErrorStatusCode.BAD_REQUEST
         );
       }
+
+      const link = await prisma.links.findUnique({
+        where: {
+          videoId: videoId,
+        },
+      });
+
+      if (!link) {
+        return httpError(
+          next,
+          new Error("Video not generated yet"),
+          req,
+          EErrorStatusCode.NOT_FOUND
+        );
+      }
+
+      return httpResponse(
+        req,
+        res,
+        EResponseStatusCode.OK,
+        "Video link found.",
+        {
+          link: link,
+        }
+      );
     }
   ),
 };
