@@ -13,9 +13,11 @@ import prisma from "../prisma/prismaClient";
 
 export default {
   handleUpload: asyncErrorHandler(async (req: Request, res: Response) => {
-    const key = quicker.generateKeyFilename();
+    const key: string = quicker.generateKeyFilename();
     const bucketName = String(AppConfig.get("BUCKET_NAME_NORMAL_UPLOAD")) || "";
     const uploadUrl = await s3Service.getUploadUrl(key, bucketName);
+    const videoName = key.split("/")[1];
+    const videoId = videoName.split(".")[0];
     return httpResponse(
       req,
       res,
@@ -24,7 +26,7 @@ export default {
       {
         presignedUrl: uploadUrl,
         key: key,
-        videoId: key,
+        videoId: videoId,
       }
     );
   }),

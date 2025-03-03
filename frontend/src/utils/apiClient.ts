@@ -1,14 +1,13 @@
-import api from "./api";
 import axios from "axios";
 import { ENDPOINTS } from "./endpoints";
 
 export async function getPresignedUrl() {
-  const response = await api.get(ENDPOINTS.GET_PRESIGNED_URL);
+  const response = await axios.get(ENDPOINTS.GET_PRESIGNED_URL);
   return response.data;
 }
 
 export async function getPlaybackUrl(videoId: string) {
-  const response = await api.get(`${ENDPOINTS.GET_PLAYBACK_URL}/${videoId}`);
+  const response = await axios.get(`${ENDPOINTS.GET_PLAYBACK_URL}/${videoId}`);
   return response.data;
 }
 

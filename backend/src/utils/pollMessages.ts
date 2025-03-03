@@ -11,7 +11,8 @@ async function processMessage(body: string | undefined) {
   try {
     const event = JSON.parse(body!);
     const key = event.Records?.[0]?.s3?.object?.key;
-    const videoId = key.split("/")[1];
+    const videoName = key.split("/")[1];
+    const videoId = videoName.split(".")[0];
     console.log(videoId);
     if (key) {
       console.log("Object key found", key);
@@ -19,7 +20,7 @@ async function processMessage(body: string | undefined) {
         key,
         String(AppConfig.get("BUCKET_NAME_NORMAL_UPLOAD"))
       );
-      console.log("Download URL:", downloadUrl);
+      // console.log("Download URL:", downloadUrl);
       //   const docker = spawn("docker", [
       //     "run",
       //     "--rm",
@@ -40,7 +41,7 @@ async function processMessage(body: string | undefined) {
       //     "video-transcoder",
       //   ]);
 
-      //   docker.stdout.on("data", (data) => {
+      //   docker.stdout.on("data", (data: any) => {
       //     console.log(`Container output: ${data}`);
       //   });
       await runContainer(downloadUrl, videoId);
