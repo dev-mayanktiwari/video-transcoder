@@ -1,6 +1,6 @@
 # FRAMEFLUX
 
-![FRAMEFLUX Logo](frontend/public/image.png =250x)
+<img src="frontend/public/image.png" alt="frameflux" width="250"/>
 
 ## 🚀 Introduction
 FRAMEFLUX is a powerful and intuitive platform for seamless video processing and automation. Whether you're editing, transcoding, or applying filters, FRAMEFLUX streamlines your workflow with efficiency and precision.
