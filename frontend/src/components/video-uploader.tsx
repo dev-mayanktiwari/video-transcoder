@@ -85,9 +85,9 @@ export function VideoUploader({
   };
 
   const pollForVideo = async (videoId: string) => {
-    const pollInterval = 7000; // 7 seconds
+    const pollInterval = 10000; // 7 seconds
     let attempts = 0;
-    const maxAttempts = 85; // ~10 minutes
+    const maxAttempts = 100; // ~10 minutes
 
     const poll = async () => {
       try {
