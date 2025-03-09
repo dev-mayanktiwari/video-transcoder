@@ -28,7 +28,20 @@ export default function Home() {
           <ThemeToggle />
         </div>
       </header>
-
+      <div className="bg-yellow-300 text-sm text-black p-4 rounded-md flex items-center justify-between">
+        <span>
+          Due to AWS free tier limitations, the transcoding service is currently
+          disabled. Please check back later.
+        </span>
+        <a
+          href="https://youtu.be/PvSAJUU2mYU"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 underline ml-4"
+        >
+          Check out the demo video
+        </a>
+      </div>
       {/* Main content */}
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="space-y-8">
